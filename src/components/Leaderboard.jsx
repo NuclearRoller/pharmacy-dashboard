@@ -8,7 +8,7 @@ const branchNamesArabic = {
   Ahmed: "أحمد",
   Wael: "وائل",
   Gihan: "جيهان",
-  Nahia: "ناهية",
+  Nahia: "ناهيا",
   Faisal: "فيصل",
   Alaa: "الاء",
 };
