@@ -2,28 +2,36 @@
 import { useEffect } from "react";
 import Papa from "papaparse";
 
-export default function LiveCSV({ csvUrl, onDataLoaded, refreshMs = 60000 }) {
+export default function LiveCSV({ csvUrl, onDataLoaded }) {
   useEffect(() => {
-    let mounted = true;
+    if (!csvUrl) return;
 
-    const fetchCSV = async () => {
-      try {
-        const res = await fetch(csvUrl, { cache: "no-store" });
-        const text = await res.text();
-        const parsed = Papa.parse(text, { header: true });
-        if (mounted) onDataLoaded(parsed.data.filter((r) => r.Date));
-      } catch (e) {
-        console.error("CSV fetch error:", e);
-      }
-    };
+    console.info("[LiveCSV] fetching CSV:", csvUrl);
 
-    fetchCSV();
-    const id = setInterval(fetchCSV, refreshMs);
-    return () => {
-      mounted = false;
-      clearInterval(id);
-    };
-  }, [csvUrl, onDataLoaded, refreshMs]);
+    Papa.parse(csvUrl, {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+      transformHeader: (h) => {
+        if (!h) return h;
+        // remove BOM + trim
+        return h.replace(/\uFEFF/g, "").trim();
+      },
+      complete: (results) => {
+        console.info("[LiveCSV] parse complete — rows:", results.data.length);
+        if (results && results.data && results.data.length > 0) {
+          console.log("[LiveCSV] first row (raw):", results.data[0]);
+          console.log("[LiveCSV] keys:", Object.keys(results.data[0]));
+        } else {
+          console.warn("[LiveCSV] no rows parsed");
+        }
+        onDataLoaded && onDataLoaded(results.data);
+      },
+      error: (err) => {
+        console.error("[LiveCSV] parse error:", err);
+      },
+    });
+  }, [csvUrl, onDataLoaded]);
 
   return null;
 }
