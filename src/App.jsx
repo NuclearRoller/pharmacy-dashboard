@@ -52,9 +52,12 @@ export default function App() {
   }, [salesData]);
 
   const branchNames = useMemo(() => {
-    if (!parsedData.length) return [];
-    return Object.keys(parsedData[0]).filter(k => k !== "Date" && k !== "Total");
-  }, [parsedData]);
+  if (!parsedData.length) return [];
+  return Object.keys(parsedData[0]).filter(
+    k => k && k !== "Date" && k !== "Total" && !k.startsWith("_")
+  );
+}, [parsedData]);
+
 
   // --- Monthly averages ---
   const monthlyAverages = useMemo(() => {
