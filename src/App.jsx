@@ -36,28 +36,26 @@ export default function App() {
   const csvUrl =
     "https://docs.google.com/spreadsheets/d/e/2PACX-1vQOfzffnX62Ifzn7nw_BrorPy-YSOdUbRr85ZvbynG67pJaVaco95dM8j5Q4t5IYNNaUsqKII0jaYay/pub?output=csv";
 
-  // --- Parse numbers safely ---
+  // --- Parse numbers safely + filter junk columns ---
   const parsedData = useMemo(() => {
     if (!salesData.length) return [];
     return salesData.map(row => {
       const out = { Date: row.Date };
       Object.keys(row).forEach(k => {
-        if (k !== "Date") {
+        if (k && k !== "Date" && k !== "Total" && !k.startsWith("_")) {
           const num = Number(String(row[k] || "0").replace(/,/g, ""));
           out[k] = Number.isFinite(num) ? num : 0;
         }
       });
+      out.Total = Number(String(row.Total || "0").replace(/,/g, "")) || 0;
       return out;
     });
   }, [salesData]);
 
   const branchNames = useMemo(() => {
-  if (!parsedData.length) return [];
-  return Object.keys(parsedData[0]).filter(
-    k => k && k !== "Date" && k !== "Total" && !k.startsWith("_")
-  );
-}, [parsedData]);
-
+    if (!parsedData.length) return [];
+    return Object.keys(parsedData[0]).filter(k => k !== "Date" && k !== "Total");
+  }, [parsedData]);
 
   // --- Monthly averages ---
   const monthlyAverages = useMemo(() => {
@@ -120,12 +118,17 @@ export default function App() {
     const prevTotal = branchNames.reduce((sum, b) => sum + (previous[b] || 0), 0);
     const percentGrowth = prevTotal ? ((totalSales - prevTotal) / prevTotal) * 100 : 0;
 
-    let best = { branch: branchNames[0], avg: current[branchNames[0]] };
-    let worst = { branch: branchNames[0], avg: current[branchNames[0]] };
+    let best = { branch: null, avg: -Infinity };
+    let worst = { branch: null, avg: Infinity };
+
     branchNames.forEach(b => {
-      if (current[b] > best.avg) best = { branch: b, avg: current[b] };
-      if (current[b] < worst.avg) worst = { branch: b, avg: current[b] };
+      const avg = current[b] || 0;
+      if (avg > best.avg) best = { branch: b, avg };
+      if (avg < worst.avg) worst = { branch: b, avg };
     });
+
+    if (!best.branch) best = { branch: null, avg: 0 };
+    if (!worst.branch) worst = { branch: null, avg: 0 };
 
     return { totalSales, percentGrowth, best, worst };
   }, [monthlyAverages, branchNames]);
