@@ -11,6 +11,7 @@ const branchNamesArabic = {
   Nahia: "ناهيا",
   Faisal: "فيصل",
   Alaa: "الاء",
+ Mahmoud: "محمود",
 };
 
 export default function Leaderboard({ monthAverage, colors }) {
