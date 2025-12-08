@@ -10,26 +10,35 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-/**
- * SalesChart - multi-branch line chart
- * props:
- *  - data: array of objects (either monthly: { month, Ahmed, Wael, ... } or daily: { date, Ahmed, ... })
- *  - colors: { Ahmed: "#...", Wael: "#...", ... }
- *  - isMonthlyAverage: boolean (true -> x axis = "month", false -> x axis = "date")
- */
+const branchNamesArabic = {
+  Ahmed: "أحمد",
+  Wael: "وائل",
+  Gihan: "جيهان",
+  Nahia: "ناهيا",
+  Faisal: "فيصل",
+  Alaa: "الاء",
+  Mahmoud: "محمود",
+};
+
 export default function SalesChart({ data, colors = {}, isMonthlyAverage = true }) {
   if (!data || !data.length) return <p className="text-gray-600">No chart data</p>;
 
   const xKey = isMonthlyAverage ? "month" : "date";
 
-  // Build list of series keys — explicitly exclude the xKey, "Total", and any non-series keys
-  const seriesKeys = Object.keys(data[0]).filter(
-    (k) =>
-      k !== xKey &&
-      k !== "Total" &&
-      k !== "total" &&
-      k !== "month" &&
-      k !== "date"
+  // FIX: detect all branches across ALL rows (not only row 0)
+  const seriesKeys = Array.from(
+    new Set(
+      data.flatMap((row) =>
+        Object.keys(row).filter(
+          (k) =>
+            k !== xKey &&
+            k !== "Total" &&
+            k !== "total" &&
+            k !== "month" &&
+            k !== "date"
+        )
+      )
+    )
   );
 
   const formatTick = (v) => (Number.isFinite(v) ? v.toLocaleString() : v);
@@ -41,16 +50,24 @@ export default function SalesChart({ data, colors = {}, isMonthlyAverage = true 
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey={xKey} />
           <YAxis tickFormatter={formatTick} />
+
           <Tooltip
-            formatter={(value) => (Number.isFinite(value) ? value.toLocaleString() : value)}
+            formatter={(value, name) => [
+              Number.isFinite(value) ? value.toLocaleString() : value,
+              branchNamesArabic[name] || name,
+            ]}
           />
-          <Legend />
+
+          <Legend
+            formatter={(value) => branchNamesArabic[value] || value}
+          />
+
           {seriesKeys.map((key) => (
             <Line
               key={key}
               type="monotone"
               dataKey={key}
-              stroke={colors[key] || "#8884d8"}
+              stroke={colors[key] || "#ccc"}  // FIXED fallback
               strokeWidth={2}
               dot={{ r: 4 }}
               activeDot={{ r: 6 }}

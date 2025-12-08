@@ -9,6 +9,16 @@ import {
   CartesianGrid,
 } from "recharts";
 
+const branchNamesArabic = {
+  Ahmed: "أحمد",
+  Wael: "وائل",
+  Gihan: "جيهان",
+  Nahia: "ناهيا",
+  Faisal: "فيصل",
+  Alaa: "الاء",
+  Mahmoud: "محمود",
+};
+
 export default function BranchLineChart({
   branch,
   title,
@@ -25,20 +35,25 @@ export default function BranchLineChart({
         className="text-lg font-semibold mb-2"
         style={{ color, fontFamily: "Cairo, sans-serif" }}
       >
-        {title} {/* Arabic branch name */}
+        {title}
       </h3>
+
       <ResponsiveContainer width="100%" height={200}>
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey={isMonthlyAverage ? "month" : "date"} />
           <YAxis />
-          <Tooltip />
+          <Tooltip
+            formatter={(v) => v.toLocaleString()}
+            labelFormatter={() => branchNamesArabic[branch]}
+          />
           <Line
             type="monotone"
             dataKey={branch}
             stroke={color}
             strokeWidth={2}
-            dot={{ r: 4 }}
+            dot={{ r: 3, stroke: color }}
+            activeDot={{ r: 5 }}
           />
         </LineChart>
       </ResponsiveContainer>
