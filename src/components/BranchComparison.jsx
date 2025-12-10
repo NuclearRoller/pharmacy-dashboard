@@ -51,20 +51,37 @@ export default function BranchComparison({
       </h2>
 
       {/* Month Selector */}
-      <div className="mb-4">
-        <label className="text-sm text-gray-600">اختر الشهر</label>
-        <select
-          value={selectedMonth}
-          onChange={(e) => setSelectedMonth(e.target.value)}
-          className="mt-1 w-full p-2 border rounded-lg"
-        >
-          {months.map((m) => (
-            <option key={m} value={m}>
-              {m}
-            </option>
-          ))}
-        </select>
-      </div>
+      <div className="flex items-center justify-center gap-4 my-4">
+  <button
+    onClick={() => {
+      const idx = months.indexOf(selectedMonth);
+      if (idx > 0) setSelectedMonth(months[idx - 1]);
+    }}
+    className="text-2xl px-3 py-1 rounded-lg bg-gray-100 hover:bg-gray-200"
+    disabled={months.indexOf(selectedMonth) === 0}
+  >
+    ←
+  </button>
+
+  <div 
+    className="text-lg font-semibold"
+    style={{ fontFamily: "Cairo, sans-serif" }}
+  >
+    {selectedMonth}
+  </div>
+
+  <button
+    onClick={() => {
+      const idx = months.indexOf(selectedMonth);
+      if (idx < months.length - 1) setSelectedMonth(months[idx + 1]);
+    }}
+    className="text-2xl px-3 py-1 rounded-lg bg-gray-100 hover:bg-gray-200"
+    disabled={months.indexOf(selectedMonth) === months.length - 1}
+  >
+    →
+  </button>
+</div>
+
 
       {/* Branch Selectors */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
