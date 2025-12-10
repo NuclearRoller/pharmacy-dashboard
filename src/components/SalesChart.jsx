@@ -20,12 +20,19 @@ const branchNamesArabic = {
   Mahmoud: "محمود",
 };
 
-export default function SalesChart({ data, colors = {}, isMonthlyAverage = true }) {
-  if (!data || !data.length) return <p className="text-gray-600">No chart data</p>;
+// ⬅ ADDED anomalies to props
+export default function SalesChart({
+  data,
+  colors = {},
+  isMonthlyAverage = true,
+  anomalies = [],
+}) {
+  if (!data || !data.length)
+    return <p className="text-gray-600">No chart data</p>;
 
   const xKey = isMonthlyAverage ? "month" : "date";
 
-  // FIX: detect all branches across ALL rows (not only row 0)
+  // detect all branches across ALL rows
   const seriesKeys = Array.from(
     new Set(
       data.flatMap((row) =>
@@ -58,16 +65,40 @@ export default function SalesChart({ data, colors = {}, isMonthlyAverage = true 
             ]}
           />
 
-          <Legend
-            formatter={(value) => branchNamesArabic[value] || value}
-          />
+          <Legend formatter={(value) => branchNamesArabic[value] || value} />
 
+          {/* ⬇⬇⬇ ANOMALY MARKERS ADDED HERE */}
+          {anomalies &&
+            anomalies.map((a, i) => (
+              <Line
+                key={"anomaly-" + i}
+                dataKey={a.branch}
+                data={data.filter(
+                  (d) => (d.date || d.month) === a.date
+                )}
+                dot={{
+                  r: 7,
+                  stroke:
+                    a.type === "spike"
+                      ? "green"
+                      : a.type === "drop"
+                      ? "red"
+                      : "orange",
+                  strokeWidth: 3,
+                  fill: "#fff",
+                }}
+                activeDot={false}
+                stroke="transparent" // so line doesn't appear
+              />
+            ))}
+
+          {/* MAIN LINES */}
           {seriesKeys.map((key) => (
             <Line
               key={key}
               type="monotone"
               dataKey={key}
-              stroke={colors[key] || "#ccc"}  // FIXED fallback
+              stroke={colors[key] || "#ccc"}
               strokeWidth={2}
               dot={{ r: 4 }}
               activeDot={{ r: 6 }}

@@ -9,6 +9,9 @@ import BranchPieChart from "./components/BranchPieChart";
 import Leaderboard from "./components/Leaderboard";
 import TotalSalesChart from "./components/TotalSalesChart";
 import BranchComparison from "./components/BranchComparison";
+import detectAnomalies from "./utils/detectAnomalies";
+import AnomalyList from "./components/AnomalyList";
+
 
 export default function App() {
   const [salesData, setSalesData] = useState([]);
@@ -102,6 +105,10 @@ const branchNamesArabic = {
       return entry;
     });
   }, [parsedData, dayWindow, branchNames]);
+// --- Detect anomalies for daily data ---
+const dailyAnomalies = useMemo(() => {
+  return detectAnomalies(dailyTotalsSlice, branchNames);
+}, [dailyTotalsSlice, branchNames]);
 
   // --- KPI Cards ---
   const kpis = useMemo(() => {
@@ -286,12 +293,13 @@ const branchNamesArabic = {
           </div>
         </div>
 
-        <SalesChart
-          data={lineMode === "averages" ? monthlyAverages : dailyTotalsSlice}
-          colors={branchColors}
-          isMonthlyAverage={lineMode === "averages"}
-        />
-      </div>
+       <SalesChart
+  data={lineMode === "averages" ? monthlyAverages : dailyTotalsSlice}
+  colors={branchColors}
+  isMonthlyAverage={lineMode === "averages"}
+  anomalies={lineMode === "averages" ? [] : dailyAnomalies} 
+/>
+
 
       {/* ===== BRANCH LINE CHARTS ===== */}
       <div className="bg-white rounded-2xl shadow p-4">
@@ -323,6 +331,13 @@ const branchNamesArabic = {
   branchNamesArabic={branchNamesArabic}
   branchColors={branchColors}
 />
+{/* ANOMALY LIST */}
+<AnomalyList
+  anomalies={anomalies}
+  branchNamesArabic={branchNamesArabic}
+  branchColors={branchColors}
+/>
+
 
     </div>
   );
