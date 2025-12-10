@@ -317,7 +317,7 @@ const branchNamesArabic = {
         <TotalSalesChart data={dailyTotalsSlice} />
       </div>
       {/* ===== BRANCH COMPARISON (BOTTOM) ===== */}
-<BranchComparison
+        <BranchComparison
   monthlyAverages={monthlyAverages}
   branchNames={branchNames}
   branchNamesArabic={branchNamesArabic}
