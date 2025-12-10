@@ -2,13 +2,13 @@
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 const branchNamesArabic = {
-  Ahmed: "أحمد",
-  Wael: "وائل",
-  Gihan: "جيهان",
-  Nahia: "ناهيا",
+  Ahmed : "أحمد",
+  Wael  : "وائل",
+  Gihan : "جيهان",
+  Nahia : "ناهيا",
   Faisal: "فيصل",
-  Alaa: "الاء",
-  Mahmoud: "محمود",
+  Alaa  : "الاء",
+  Mahmoud:"محمود",   
 };
 
 export default function BranchPieChart({ monthAverage, colors }) {

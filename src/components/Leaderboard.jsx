@@ -2,13 +2,13 @@
 import { motion } from "framer-motion";
 
 const branchNamesArabic = {
-  Ahmed: "أحمد",
-  Wael: "وائل",
-  Gihan: "جيهان",
-  Nahia: "ناهيا",
+  Ahmed : "أحمد",
+  Wael  : "وائل",
+  Gihan : "جيهان",
+  Nahia : "ناهيا",
   Faisal: "فيصل",
-  Alaa: "الاء",
-  Mahmoud: "محمود",
+  Alaa  : "الاء",
+  Mahmoud:"محمود",     // ←
 };
 
 export default function Leaderboard({ monthAverage, colors }) {

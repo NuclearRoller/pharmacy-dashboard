@@ -15,23 +15,25 @@ export default function App() {
   const [lineMode, setLineMode] = useState("averages");
   const [dayWindow, setDayWindow] = useState(30);
 
-  const branchColors = {
-    Ahmed: "#9CA3AF",
-    Wael: "#93C5FD",
-    Gihan: "#FDE68A",
-    Nahia: "#F9A8D4",
-    Faisal: "#FDBA74",
-    Alaa: "#D8B4FE",
-  };
+const branchColors = {
+  Ahmed : "#9CA3AF",
+  Wael  : "#93C5FD",
+  Gihan : "#FDE68A",
+  Nahia : "#F9A8D4",
+  Faisal: "#FDBA74",
+  Alaa  : "#D8B4FE",
+  Mahmoud:"#10B981",   // ← any colour you like
+};
 
-  const branchNamesArabic = {
-    Ahmed: "أحمد",
-    Wael: "وائل",
-    Gihan: "جيهان",
-    Nahia: "ناهيا",
-    Faisal: "فيصل",
-    Alaa: "الاء",
-  };
+const branchNamesArabic = {
+  Ahmed : "أحمد",
+  Wael  : "وائل",
+  Gihan : "جيهان",
+  Nahia : "ناهيا",
+  Faisal: "فيصل",
+  Alaa  : "الاء",
+  Mahmoud:"محمود",     // ← Arabic name
+};
 
   const csvUrl =
     "https://docs.google.com/spreadsheets/d/e/2PACX-1vQOfzffnX62Ifzn7nw_BrorPy-YSOdUbRr85ZvbynG67pJaVaco95dM8j5Q4t5IYNNaUsqKII0jaYay/pub?output=csv";
