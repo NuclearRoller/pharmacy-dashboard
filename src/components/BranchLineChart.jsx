@@ -16,7 +16,7 @@ const branchNamesArabic = {
   Nahia: "ناهيا",
   Faisal: "فيصل",
   Alaa: "الاء",
-  Mahmoud: "محمود",
+   Mahmoud: "محمود",
 };
 
 export default function BranchLineChart({

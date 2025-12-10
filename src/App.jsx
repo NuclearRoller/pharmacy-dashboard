@@ -8,6 +8,7 @@ import BranchLineChart from "./components/BranchLineChart";
 import BranchPieChart from "./components/BranchPieChart";
 import Leaderboard from "./components/Leaderboard";
 import TotalSalesChart from "./components/TotalSalesChart";
+import BranchComparison from "./components/BranchComparison";
 
 export default function App() {
   const [salesData, setSalesData] = useState([]);
@@ -315,6 +316,14 @@ const branchNamesArabic = {
         <h2 className="text-xl font-semibold mb-2" style={{ fontFamily: "Cairo, sans-serif" }}>إجمالي المبيعات اليومية</h2>
         <TotalSalesChart data={dailyTotalsSlice} />
       </div>
+      {/* ===== BRANCH COMPARISON (BOTTOM) ===== */}
+<BranchComparison
+  monthlyAverages={monthlyAverages}
+  branchNames={branchNames}
+  branchNamesArabic={branchNamesArabic}
+  branchColors={branchColors}
+/>
+
     </div>
   );
 }
