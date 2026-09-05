@@ -185,31 +185,31 @@ const branchNamesArabic = {
 
   return (
     <div className="min-h-screen bg-gray-100 font-sans">
-      {/* ===== TAB NAVIGATION ===== */}
-      <div className="bg-white shadow-md p-4 mb-4">
-        <div className="flex gap-4">
-          <button
-            onClick={() => setActiveTab("pharmacy")}
-            className={`px-4 py-2 rounded-lg transition font-medium ${
-              activeTab === "pharmacy"
-                ? "bg-blue-500 text-white shadow"
-                : "bg-gray-200 hover:bg-gray-300 text-gray-700"
-            }`}
-          >
-            لوحة تحكم الصيدلية
-          </button>
-          <button
-            onClick={() => setActiveTab("employees")}
-            className={`px-4 py-2 rounded-lg transition font-medium ${
-              activeTab === "employees"
-                ? "bg-blue-500 text-white shadow"
-                : "bg-gray-200 hover:bg-gray-300 text-gray-700"
-            }`}
-          >
-            تحليلات الموظفين
-          </button>
-        </div>
-      </div>
+{/* ===== TAB NAVIGATION ===== */}
+<div className="bg-white shadow-md p-4 mb-4 sticky top-0 z-50">
+  <div className="flex gap-4 justify-center">
+    <button
+      onClick={() => setActiveTab("pharmacy")}
+      className={`px-6 py-3 rounded-xl text-lg font-bold transition ${
+        activeTab === "pharmacy"
+          ? "bg-blue-500 text-white shadow-lg"
+          : "bg-gray-200 hover:bg-gray-300 text-gray-700"
+      }`}
+    >
+      🏥 لوحة تحكم الصيدلية
+    </button>
+    <button
+      onClick={() => setActiveTab("employees")}
+      className={`px-6 py-3 rounded-xl text-lg font-bold transition ${
+        activeTab === "employees"
+          ? "bg-blue-500 text-white shadow-lg"
+          : "bg-gray-200 hover:bg-gray-300 text-gray-700"
+      }`}
+    >
+      👥 تحليلات الموظفين
+    </button>
+  </div>
+</div>
 
       {activeTab === "pharmacy" ? (
         <div className="p-6 space-y-6">
