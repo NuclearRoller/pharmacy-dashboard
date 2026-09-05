@@ -47,19 +47,21 @@ const branchNamesArabic = {
     "https://docs.google.com/spreadsheets/d/e/2PACX-1vSzOQ2TGolBhFZJOvQxhiUBvGoBl0E45MJpJBYTS27Wbm_Sk15bfWb32yjZPha0cULn_7cssqqpd3vr/pub?gid=0&single=true&output=csv";
 
   // --- Parse numbers safely + filter junk columns ---
-  const parsedData = useMemo(() => {
+const parsedData = useMemo(() => {
     if (!salesData.length) return [];
-    return salesData.map(row => {
-      const out = { Date: row.Date };
-      Object.keys(row).forEach(k => {
-        if (k && k !== "Date" && k !== "Total" && !k.startsWith("_")) {
-          const num = Number(String(row[k] || "0").replace(/,/g, ""));
-          out[k] = Number.isFinite(num) ? num : 0;
-        }
+    return salesData
+      .filter(row => row.Date && row.Date.trim() !== "")
+      .map(row => {
+        const out = { Date: row.Date };
+        Object.keys(row).forEach(k => {
+          if (k && k !== "Date" && k !== "Total" && !k.startsWith("_")) {
+            const num = Number(String(row[k] || "0").replace(/,/g, ""));
+            out[k] = Number.isFinite(num) ? num : 0;
+          }
+        });
+        out.Total = Number(String(row.Total || "0").replace(/,/g, "")) || 0;
+        return out;
       });
-      out.Total = Number(String(row.Total || "0").replace(/,/g, "")) || 0;
-      return out;
-    });
   }, [salesData]);
 
   const branchNames = useMemo(() => {
