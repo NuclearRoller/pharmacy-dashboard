@@ -20,7 +20,6 @@ const branchNamesArabic = {
   Mahmoud: "محمود",
 };
 
-// ⬅ ADDED anomalies to props
 export default function SalesChart({
   data,
   colors = {},
@@ -32,7 +31,6 @@ export default function SalesChart({
 
   const xKey = isMonthlyAverage ? "month" : "date";
 
-  // detect all branches across ALL rows
   const seriesKeys = Array.from(
     new Set(
       data.flatMap((row) =>
@@ -67,32 +65,7 @@ export default function SalesChart({
 
           <Legend formatter={(value) => branchNamesArabic[value] || value} />
 
-          {/* ⬇⬇⬇ ANOMALY MARKERS ADDED HERE */}
-          {anomalies &&
-            anomalies.map((a, i) => (
-              <Line
-                key={"anomaly-" + i}
-                dataKey={a.branch}
-                data={data.filter(
-                  (d) => (d.date || d.month) === a.date
-                )}
-                dot={{
-                  r: 7,
-                  stroke:
-                    a.type === "spike"
-                      ? "green"
-                      : a.type === "drop"
-                      ? "red"
-                      : "orange",
-                  strokeWidth: 3,
-                  fill: "#fff",
-                }}
-                activeDot={false}
-                stroke="transparent" // so line doesn't appear
-              />
-            ))}
-
-          {/* MAIN LINES */}
+          {/* MAIN LINES ONLY - No anomaly lines */}
           {seriesKeys.map((key) => (
             <Line
               key={key}
