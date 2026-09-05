@@ -10,7 +10,6 @@ import Leaderboard from "./components/Leaderboard";
 import TotalSalesChart from "./components/TotalSalesChart";
 import BranchComparison from "./components/BranchComparison";
 import detectAnomalies from "./utils/detectAnomalies";
-import AnomalyList from "./components/AnomalyList";
 import EmployeeAnalytics from "./components/EmployeeAnalytics";
 
 
@@ -367,12 +366,6 @@ const branchNamesArabic = {
             branchColors={branchColors}
           />
 
-          {/* ANOMALY LIST */}
-          <AnomalyList
-            anomalies={dailyAnomalies}
-            branchNamesArabic={branchNamesArabic}
-            branchColors={branchColors}
-          />
         </div>
       ) : (
         <EmployeeAnalytics csvUrl={salaryCsvUrl} />
