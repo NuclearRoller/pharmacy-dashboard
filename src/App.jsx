@@ -11,9 +11,11 @@ import TotalSalesChart from "./components/TotalSalesChart";
 import BranchComparison from "./components/BranchComparison";
 import detectAnomalies from "./utils/detectAnomalies";
 import AnomalyList from "./components/AnomalyList";
+import EmployeeAnalytics from "./components/EmployeeAnalytics";
 
 
 export default function App() {
+  const [activeTab, setActiveTab] = useState("pharmacy");
   const [salesData, setSalesData] = useState([]);
   const [monthIndex, setMonthIndex] = useState(0);
   const [lineMode, setLineMode] = useState("averages");
@@ -26,7 +28,7 @@ const branchColors = {
   Nahia : "#F9A8D4",
   Faisal: "#FDBA74",
   Alaa  : "#D8B4FE",
-  Mahmoud:"#10B981",   // ← any colour you like
+  Mahmoud:"#10B981",
 };
 
 const branchNamesArabic = {
@@ -36,11 +38,14 @@ const branchNamesArabic = {
   Nahia : "ناهيا",
   Faisal: "فيصل",
   Alaa  : "الاء",
-  Mahmoud:"محمود",     // ← Arabic name
+  Mahmoud:"محمود",
 };
 
   const csvUrl =
     "https://docs.google.com/spreadsheets/d/e/2PACX-1vQOfzffnX62Ifzn7nw_BrorPy-YSOdUbRr85ZvbynG67pJaVaco95dM8j5Q4t5IYNNaUsqKII0jaYay/pub?output=csv";
+
+  const salaryCsvUrl =
+    "https://docs.google.com/spreadsheets/d/e/2PACX-1vSzOQ2TGolBhFZJOvQxhiUBvGoBl0E45MJpJBYTS27Wbm_Sk15bfWb32yjZPha0cULn_7cssqqpd3vr/pub?gid=0&single=true&output=csv";
 
   // --- Parse numbers safely + filter junk columns ---
   const parsedData = useMemo(() => {
@@ -105,10 +110,11 @@ const branchNamesArabic = {
       return entry;
     });
   }, [parsedData, dayWindow, branchNames]);
-// --- Detect anomalies for daily data ---
-const dailyAnomalies = useMemo(() => {
-  return detectAnomalies(dailyTotalsSlice, branchNames);
-}, [dailyTotalsSlice, branchNames]);
+
+  // --- Detect anomalies for daily data ---
+  const dailyAnomalies = useMemo(() => {
+    return detectAnomalies(dailyTotalsSlice, branchNames);
+  }, [dailyTotalsSlice, branchNames]);
 
   // --- KPI Cards ---
   const kpis = useMemo(() => {
@@ -178,167 +184,199 @@ const dailyAnomalies = useMemo(() => {
   const nextMonth = () => setMonthIndex(i => Math.min(i + 1, monthlyAverages.length - 1));
 
   return (
-    <div className="min-h-screen p-6 space-y-6 bg-gray-100 font-sans">
-      <h1 className="text-3xl font-bold text-blue-600 mb-4" style={{ fontFamily: "Cairo, sans-serif" }}>
-        لوحة تحكم الصيدلية
-      </h1>
-      <LiveCSV csvUrl={csvUrl} onDataLoaded={setSalesData} />
-
-      {/* ===== KPI CARDS ===== */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-xl shadow-md">
-          <div className="text-sm text-gray-600 mb-1">إجمالي المبيعات هذا الشهر</div>
-          <div className="text-2xl font-bold text-green-600">{kpis.totalSales.toLocaleString()}</div>
-        </div>
-        <div className="bg-white p-4 rounded-xl shadow-md">
-          <div className="text-sm text-gray-600 mb-1">نسبة النمو مقارنة بالشهر الماضي</div>
-          <div className="text-2xl font-bold text-green-600">{kpis.percentGrowth.toFixed(1)}%</div>
-        </div>
-        <div className="bg-white p-4 rounded-xl shadow-md">
-          <div className="text-sm text-gray-600 mb-1">أفضل أداء فرع</div>
-          <div className="text-2xl font-bold" style={{ color: branchColors[kpis.best.branch] }}>
-            {kpis.best.branch ? branchNamesArabic[kpis.best.branch] : "-"} ({kpis.best.avg})
-          </div>
-        </div>
-        <div className="bg-white p-4 rounded-xl shadow-md">
-          <div className="text-sm text-gray-600 mb-1">أقل أداء فرع</div>
-          <div className="text-2xl font-bold" style={{ color: branchColors[kpis.worst.branch] }}>
-            {kpis.worst.branch ? branchNamesArabic[kpis.worst.branch] : "-"} ({kpis.worst.avg})
-          </div>
+    <div className="min-h-screen bg-gray-100 font-sans">
+      {/* ===== TAB NAVIGATION ===== */}
+      <div className="bg-white shadow-md p-4 mb-4">
+        <div className="flex gap-4">
+          <button
+            onClick={() => setActiveTab("pharmacy")}
+            className={`px-4 py-2 rounded-lg transition font-medium ${
+              activeTab === "pharmacy"
+                ? "bg-blue-500 text-white shadow"
+                : "bg-gray-200 hover:bg-gray-300 text-gray-700"
+            }`}
+          >
+            لوحة تحكم الصيدلية
+          </button>
+          <button
+            onClick={() => setActiveTab("employees")}
+            className={`px-4 py-2 rounded-lg transition font-medium ${
+              activeTab === "employees"
+                ? "bg-blue-500 text-white shadow"
+                : "bg-gray-200 hover:bg-gray-300 text-gray-700"
+            }`}
+          >
+            تحليلات الموظفين
+          </button>
         </div>
       </div>
 
-      {/* ===== COMMENTARY CARD ===== */}
-      {commentary.length > 0 && (
-        <div className="bg-white p-4 rounded-xl shadow-md space-y-1">
-          <h2 className="text-xl font-semibold mb-2" style={{ fontFamily: "Cairo, sans-serif" }}>ملخص الأداء</h2>
-          {commentary.map((line, idx) => (
-            <p
-              key={idx}
-              className="animate-fade-in"
-              style={{
-                animationDelay: `${idx * 0.3}s`,
-                color: line.branch ? branchColors[line.branch] : "#000",
-                fontFamily: "Cairo, sans-serif",
-              }}
-            >
-              {line.text}
-              {line.branch && ` ${branchNamesArabic[line.branch]}`}
-              {line.number != null && `: ${line.number}`}
-            </p>
-          ))}
-        </div>
-      )}
+      {activeTab === "pharmacy" ? (
+        <div className="p-6 space-y-6">
+          <h1 className="text-3xl font-bold text-blue-600 mb-4" style={{ fontFamily: "Cairo, sans-serif" }}>
+            لوحة تحكم الصيدلية
+          </h1>
+          <LiveCSV csvUrl={csvUrl} onDataLoaded={setSalesData} />
 
-      {/* ===== PIE + LEADERBOARD ===== */}
-      {monthlyAverages.length > 0 && (
-        <div className="bg-white rounded-2xl shadow p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xl font-semibold" style={{ fontFamily: "Cairo, sans-serif" }}>المتوسطات الشهرية</h2>
-            <div className="flex items-center gap-2">
-              <button
-                className="px-3 py-1 rounded-lg bg-blue-500 text-white hover:brightness-110"
-                onClick={prevMonth}
-              >
-                ← الشهر السابق
-              </button>
-              <button
-                className="px-3 py-1 rounded-lg bg-blue-500 text-white hover:brightness-110"
-                onClick={nextMonth}
-              >
-                الشهر التالي →
-              </button>
+          {/* ===== KPI CARDS ===== */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-white p-4 rounded-xl shadow-md">
+              <div className="text-sm text-gray-600 mb-1">إجمالي المبيعات هذا الشهر</div>
+              <div className="text-2xl font-bold text-green-600">{kpis.totalSales.toLocaleString()}</div>
             </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-gray-50 rounded-xl p-4">
-              <BranchPieChart monthAverage={monthlyAverages[monthIndex]} colors={branchColors} />
+            <div className="bg-white p-4 rounded-xl shadow-md">
+              <div className="text-sm text-gray-600 mb-1">نسبة النمو مقارنة بالشهر الماضي</div>
+              <div className="text-2xl font-bold text-green-600">{kpis.percentGrowth.toFixed(1)}%</div>
             </div>
-            <div className="bg-gray-50 rounded-xl p-4">
-              <Leaderboard monthAverage={monthlyAverages[monthIndex]} colors={branchColors} />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ===== BIG LINE CHART ===== */}
-      <div className="bg-white rounded-2xl shadow p-4 space-y-2">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          <h2 className="text-xl font-semibold" style={{ fontFamily: "Cairo, sans-serif" }}>جميع الفروع</h2>
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm">عرض:</span>
-              <select
-                value={lineMode}
-                onChange={e => setLineMode(e.target.value)}
-                className="border rounded px-2 py-1"
-              >
-                <option value="averages">المتوسطات (آخر 6 أشهر)</option>
-                <option value="totals">المبيعات اليومية</option>
-              </select>
-            </div>
-            {lineMode === "totals" && (
-              <div className="flex items-center gap-2">
-                <span className="text-sm">أيام:</span>
-                <input
-                  type="range"
-                  min="7"
-                  max={Math.max(7, parsedData.length)}
-                  value={dayWindow}
-                  onChange={e => setDayWindow(Number(e.target.value))}
-                />
-                <span className="text-sm">{dayWindow}</span>
+            <div className="bg-white p-4 rounded-xl shadow-md">
+              <div className="text-sm text-gray-600 mb-1">أفضل أداء فرع</div>
+              <div className="text-2xl font-bold" style={{ color: branchColors[kpis.best.branch] }}>
+                {kpis.best.branch ? branchNamesArabic[kpis.best.branch] : "-"} ({kpis.best.avg})
               </div>
-            )}
+            </div>
+            <div className="bg-white p-4 rounded-xl shadow-md">
+              <div className="text-sm text-gray-600 mb-1">أقل أداء فرع</div>
+              <div className="text-2xl font-bold" style={{ color: branchColors[kpis.worst.branch] }}>
+                {kpis.worst.branch ? branchNamesArabic[kpis.worst.branch] : "-"} ({kpis.worst.avg})
+              </div>
+            </div>
           </div>
-        </div>
 
-       <SalesChart
-  data={lineMode === "averages" ? monthlyAverages : dailyTotalsSlice}
-  colors={branchColors}
-  isMonthlyAverage={lineMode === "averages"}
-  anomalies={lineMode === "averages" ? [] : dailyAnomalies} 
-/>
+          {/* ===== COMMENTARY CARD ===== */}
+          {commentary.length > 0 && (
+            <div className="bg-white p-4 rounded-xl shadow-md space-y-1">
+              <h2 className="text-xl font-semibold mb-2" style={{ fontFamily: "Cairo, sans-serif" }}>ملخص الأداء</h2>
+              {commentary.map((line, idx) => (
+                <p
+                  key={idx}
+                  className="animate-fade-in"
+                  style={{
+                    animationDelay: `${idx * 0.3}s`,
+                    color: line.branch ? branchColors[line.branch] : "#000",
+                    fontFamily: "Cairo, sans-serif",
+                  }}
+                >
+                  {line.text}
+                  {line.branch && ` ${branchNamesArabic[line.branch]}`}
+                  {line.number != null && `: ${line.number}`}
+                </p>
+              ))}
+            </div>
+          )}
 
+          {/* ===== PIE + LEADERBOARD ===== */}
+          {monthlyAverages.length > 0 && (
+            <div className="bg-white rounded-2xl shadow p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-xl font-semibold" style={{ fontFamily: "Cairo, sans-serif" }}>المتوسطات الشهرية</h2>
+                <div className="flex items-center gap-2">
+                  <button
+                    className="px-3 py-1 rounded-lg bg-blue-500 text-white hover:brightness-110"
+                    onClick={prevMonth}
+                  >
+                    ← الشهر السابق
+                  </button>
+                  <button
+                    className="px-3 py-1 rounded-lg bg-blue-500 text-white hover:brightness-110"
+                    onClick={nextMonth}
+                  >
+                    الشهر التالي →
+                  </button>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <BranchPieChart monthAverage={monthlyAverages[monthIndex]} colors={branchColors} />
+                </div>
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <Leaderboard monthAverage={monthlyAverages[monthIndex]} colors={branchColors} />
+                </div>
+              </div>
+            </div>
+          )}
 
-      {/* ===== BRANCH LINE CHARTS ===== */}
-      <div className="bg-white rounded-2xl shadow p-4">
-        <h2 className="text-xl font-semibold mb-3" style={{ fontFamily: "Cairo, sans-serif" }}>مخططات الفروع</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {branchNames.map(branch => (
-            <BranchLineChart
-              key={branch}
-              branch={branch}
-              title={branchNamesArabic[branch]}
-              color={branchColors[branch]}
+          {/* ===== BIG LINE CHART ===== */}
+          <div className="bg-white rounded-2xl shadow p-4 space-y-2">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <h2 className="text-xl font-semibold" style={{ fontFamily: "Cairo, sans-serif" }}>جميع الفروع</h2>
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">عرض:</span>
+                  <select
+                    value={lineMode}
+                    onChange={e => setLineMode(e.target.value)}
+                    className="border rounded px-2 py-1"
+                  >
+                    <option value="averages">المتوسطات (آخر 6 أشهر)</option>
+                    <option value="totals">المبيعات اليومية</option>
+                  </select>
+                </div>
+                {lineMode === "totals" && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm">أيام:</span>
+                    <input
+                      type="range"
+                      min="7"
+                      max={Math.max(7, parsedData.length)}
+                      value={dayWindow}
+                      onChange={e => setDayWindow(Number(e.target.value))}
+                    />
+                    <span className="text-sm">{dayWindow}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <SalesChart
+              data={lineMode === "averages" ? monthlyAverages : dailyTotalsSlice}
+              colors={branchColors}
               isMonthlyAverage={lineMode === "averages"}
-              monthlyData={monthlyAverages}
-              dailyData={dailyTotalsSlice}
+              anomalies={lineMode === "averages" ? [] : dailyAnomalies} 
             />
-          ))}
+          </div>
+
+          {/* ===== BRANCH LINE CHARTS ===== */}
+          <div className="bg-white rounded-2xl shadow p-4">
+            <h2 className="text-xl font-semibold mb-3" style={{ fontFamily: "Cairo, sans-serif" }}>مخططات الفروع</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {branchNames.map(branch => (
+                <BranchLineChart
+                  key={branch}
+                  branch={branch}
+                  title={branchNamesArabic[branch]}
+                  color={branchColors[branch]}
+                  isMonthlyAverage={lineMode === "averages"}
+                  monthlyData={monthlyAverages}
+                  dailyData={dailyTotalsSlice}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* ===== TOTAL DAILY SALES ===== */}
+          <div className="bg-white rounded-2xl shadow p-4">
+            <h2 className="text-xl font-semibold mb-2" style={{ fontFamily: "Cairo, sans-serif" }}>إجمالي المبيعات اليومية</h2>
+            <TotalSalesChart data={dailyTotalsSlice} />
+          </div>
+
+          {/* ===== BRANCH COMPARISON (BOTTOM) ===== */}
+          <BranchComparison
+            monthlyAverages={monthlyAverages}
+            branchNames={branchNames}
+            branchNamesArabic={branchNamesArabic}
+            branchColors={branchColors}
+          />
+
+          {/* ANOMALY LIST */}
+          <AnomalyList
+            anomalies={dailyAnomalies}
+            branchNamesArabic={branchNamesArabic}
+            branchColors={branchColors}
+          />
         </div>
-      </div>
-
-      {/* ===== TOTAL DAILY SALES ===== */}
-      <div className="bg-white rounded-2xl shadow p-4">
-        <h2 className="text-xl font-semibold mb-2" style={{ fontFamily: "Cairo, sans-serif" }}>إجمالي المبيعات اليومية</h2>
-        <TotalSalesChart data={dailyTotalsSlice} />
-      </div>
-      {/* ===== BRANCH COMPARISON (BOTTOM) ===== */}
-        <BranchComparison
-  monthlyAverages={monthlyAverages}
-  branchNames={branchNames}
-  branchNamesArabic={branchNamesArabic}
-  branchColors={branchColors}
-/>
-{/* ANOMALY LIST */}
-<AnomalyList
-  anomalies={anomalies}
-  branchNamesArabic={branchNamesArabic}
-  branchColors={branchColors}
-/>
-
-
+      ) : (
+        <EmployeeAnalytics csvUrl={salaryCsvUrl} />
+      )}
     </div>
   );
 }
