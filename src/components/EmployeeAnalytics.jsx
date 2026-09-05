@@ -1,16 +1,14 @@
 import { useState, useEffect, useMemo } from "react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area
+  BarChart, Bar, ResponsiveContainer, AreaChart, Area
 } from "recharts";
 import { parseSalaryCSV, getEmployeeStats } from "../utils/parseSalaryData";
 import { motion, AnimatePresence } from "framer-motion";
 
-const COLORS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316', '#6366F1', '#84CC16', '#06B6D4', '#D946EF'];
-
 export default function EmployeeAnalytics({ csvUrl }) {
   const [csvText, setCsvText] = useState("");
-  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [selectedEmployee, setSelectedEmployee] = useState("");
   const [chartMode, setChartMode] = useState("baseRate");
   const [monthIndex, setMonthIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -30,7 +28,8 @@ export default function EmployeeAnalytics({ csvUrl }) {
 
   const { employees, months } = useMemo(() => {
     if (!csvText) return { employees: [], months: [] };
-    return parseSalaryCSV(csvText);
+    const result = parseSalaryCSV(csvText);
+    return result;
   }, [csvText]);
 
   const employeeStats = useMemo(() => {
@@ -38,15 +37,17 @@ export default function EmployeeAnalytics({ csvUrl }) {
     return getEmployeeStats(employees, months);
   }, [employees, months]);
 
-  // Set default month to latest
   useEffect(() => {
     if (months.length) setMonthIndex(months.length - 1);
-  }, [months]);
+    if (employeeStats.length && !selectedEmployee) {
+      setSelectedEmployee(employeeStats[0].name);
+    }
+  }, [months, employeeStats]);
 
-  // Get current month data
+  const currentMonth = months[monthIndex] || "";
+
   const currentMonthData = useMemo(() => {
-    if (!employeeStats.length || !months.length) return [];
-    const currentMonth = months[monthIndex];
+    if (!employeeStats.length || !currentMonth) return [];
     return employeeStats
       .filter(emp => emp.history.some(h => h.month === currentMonth))
       .map(emp => {
@@ -58,8 +59,9 @@ export default function EmployeeAnalytics({ csvUrl }) {
           deductions: monthData?.deductions || 0,
           salary: monthData?.salary || 0,
         };
-      });
-  }, [employeeStats, months, monthIndex]);
+      })
+      .sort((a, b) => b.salary - a.salary);
+  }, [employeeStats, currentMonth]);
 
   const kpis = useMemo(() => {
     if (!currentMonthData.length) return null;
@@ -68,26 +70,25 @@ export default function EmployeeAnalytics({ csvUrl }) {
     const totalPayroll = currentMonthData.reduce((sum, e) => sum + e.salary, 0);
     const totalHours = currentMonthData.reduce((sum, e) => sum + e.hours, 0);
     const totalDeductions = currentMonthData.reduce((sum, e) => sum + e.deductions, 0);
-    
-    // Average salary
     const avgSalary = totalPayroll / totalEmployees;
+    const highestPaid = currentMonthData[0] || { name: "-", salary: 0 };
+    const mostHours = currentMonthData.reduce((max, e) => e.hours > max.hours ? e : max, currentMonthData[0] || { name: "-", hours: 0 });
     
-    // Highest paid
-    const highestPaid = currentMonthData.reduce((max, e) => e.salary > max.salary ? e : max);
-    
-    // Most hours
-    const mostHours = currentMonthData.reduce((max, e) => e.hours > max.hours ? e : max);
-    
-    return { 
-      totalEmployees, 
-      totalPayroll, 
-      totalHours, 
-      totalDeductions,
-      avgSalary,
-      highestPaid,
-      mostHours
-    };
+    return { totalEmployees, totalPayroll, totalHours, totalDeductions, avgSalary, highestPaid, mostHours };
   }, [currentMonthData]);
+
+  const selectedEmployeeData = useMemo(() => {
+    if (!selectedEmployee || !employeeStats.length) return null;
+    const emp = employeeStats.find(e => e.name === selectedEmployee);
+    if (!emp) return null;
+    return emp.history.map(h => ({
+      month: h.month,
+      baseRate: h.baseRate,
+      hours: h.hours,
+      salary: h.salary,
+      deductions: h.deductions,
+    }));
+  }, [selectedEmployee, employeeStats]);
 
   const prevMonth = () => setMonthIndex(i => Math.max(i - 1, 0));
   const nextMonth = () => setMonthIndex(i => Math.min(i + 1, months.length - 1));
@@ -101,29 +102,45 @@ export default function EmployeeAnalytics({ csvUrl }) {
   }
 
   return (
-    <div className="p-6 space-y-6" style={{ fontFamily: "Cairo, sans-serif" }}>
+    <div className="p-6 space-y-6" style={{ fontFamily: "Cairo, sans-serif" }} dir="rtl">
       <h2 className="text-3xl font-bold text-blue-600 mb-4">
         تحليلات الموظفين
       </h2>
 
-      {/* Month Navigation */}
+      {/* Month Navigation - Scrollable */}
       {months.length > 0 && (
-        <div className="flex items-center justify-between bg-white p-4 rounded-xl shadow">
-          <button
-            onClick={prevMonth}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:brightness-110"
-          >
-            ← الشهر السابق
-          </button>
-          <h3 className="text-xl font-semibold">
-            {months[monthIndex]}
-          </h3>
-          <button
-            onClick={nextMonth}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:brightness-110"
-          >
-            الشهر التالي →
-          </button>
+        <div className="bg-white p-4 rounded-xl shadow">
+          <div className="flex items-center justify-between mb-2">
+            <button
+              onClick={prevMonth}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:brightness-110"
+            >
+              → الشهر السابق
+            </button>
+            <h3 className="text-xl font-semibold">{currentMonth}</h3>
+            <button
+              onClick={nextMonth}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:brightness-110"
+            >
+              الشهر التالي ←
+            </button>
+          </div>
+          {/* Scrollable month pills */}
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {months.map((m, idx) => (
+              <button
+                key={m}
+                onClick={() => setMonthIndex(idx)}
+                className={`px-3 py-1 rounded-full whitespace-nowrap text-sm transition ${
+                  idx === monthIndex
+                    ? "bg-blue-500 text-white"
+                    : "bg-gray-200 hover:bg-gray-300"
+                }`}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
@@ -133,7 +150,7 @@ export default function EmployeeAnalytics({ csvUrl }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
         >
           <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-4 rounded-xl shadow-lg text-white">
             <div className="text-sm opacity-90 mb-1">إجمالي الموظفين</div>
@@ -141,7 +158,7 @@ export default function EmployeeAnalytics({ csvUrl }) {
           </div>
           <div className="bg-gradient-to-br from-green-500 to-green-600 p-4 rounded-xl shadow-lg text-white">
             <div className="text-sm opacity-90 mb-1">إجمالي الرواتب</div>
-            <div className="text-3xl font-bold">{kpis.totalPayroll.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{kpis.totalPayroll.toLocaleString()}</div>
           </div>
           <div className="bg-gradient-to-br from-orange-500 to-orange-600 p-4 rounded-xl shadow-lg text-white">
             <div className="text-sm opacity-90 mb-1">إجمالي الساعات</div>
@@ -149,11 +166,11 @@ export default function EmployeeAnalytics({ csvUrl }) {
           </div>
           <div className="bg-gradient-to-br from-red-500 to-red-600 p-4 rounded-xl shadow-lg text-white">
             <div className="text-sm opacity-90 mb-1">إجمالي الخصومات</div>
-            <div className="text-3xl font-bold">{kpis.totalDeductions.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{kpis.totalDeductions.toLocaleString()}</div>
           </div>
           <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-4 rounded-xl shadow-lg text-white">
             <div className="text-sm opacity-90 mb-1">متوسط الراتب</div>
-            <div className="text-3xl font-bold">{kpis.avgSalary.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{kpis.avgSalary.toLocaleString()}</div>
           </div>
           <div className="bg-gradient-to-br from-pink-500 to-pink-600 p-4 rounded-xl shadow-lg text-white">
             <div className="text-sm opacity-90 mb-1">أعلى راتب</div>
@@ -178,7 +195,7 @@ export default function EmployeeAnalytics({ csvUrl }) {
               : "bg-white text-gray-700 hover:bg-gray-100"
           }`}
         >
-          الراتب الأساسي
+          الساعة الشهرية
         </button>
         <button
           onClick={() => setChartMode("salary")}
@@ -190,9 +207,19 @@ export default function EmployeeAnalytics({ csvUrl }) {
         >
           إجمالي الراتب
         </button>
+        <button
+          onClick={() => setChartMode("deductions")}
+          className={`px-6 py-3 rounded-xl font-bold transition ${
+            chartMode === "deductions"
+              ? "bg-blue-500 text-white shadow-lg"
+              : "bg-white text-gray-700 hover:bg-gray-100"
+          }`}
+        >
+          الخصومات
+        </button>
       </div>
 
-      {/* All Employees Comparison Chart */}
+      {/* Employee Comparison Chart */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -200,7 +227,7 @@ export default function EmployeeAnalytics({ csvUrl }) {
         className="bg-white rounded-2xl shadow p-4"
       >
         <h3 className="text-xl font-semibold mb-3">
-          مقارنة الموظفين - {chartMode === "baseRate" ? "الراتب الأساسي" : "إجمالي الراتب"}
+          مقارنة الموظفين - {chartMode === "baseRate" ? "الساعة الشهرية" : chartMode === "salary" ? "إجمالي الراتب" : "الخصومات"}
         </h3>
         <ResponsiveContainer width="100%" height={400}>
           <BarChart data={currentMonthData}>
@@ -209,61 +236,56 @@ export default function EmployeeAnalytics({ csvUrl }) {
             <YAxis />
             <Tooltip />
             <Bar 
-              dataKey={chartMode === "baseRate" ? "baseRate" : "salary"} 
-              fill="#3B82F6" 
-              name={chartMode === "baseRate" ? "الراتب الأساسي" : "إجمالي الراتب"}
+              dataKey={chartMode} 
+              fill={chartMode === "baseRate" ? "#10B981" : chartMode === "salary" ? "#3B82F6" : "#EF4444"} 
+              name={chartMode === "baseRate" ? "الساعة الشهرية" : chartMode === "salary" ? "إجمالي الراتب" : "الخصومات"}
               radius={[8, 8, 0, 0]}
             />
           </BarChart>
         </ResponsiveContainer>
       </motion.div>
 
-      {/* Employee Table */}
+      {/* Leaderboard */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-        className="bg-white rounded-2xl shadow p-4 overflow-x-auto"
+        transition={{ duration: 0.5, delay: 0.15 }}
+        className="bg-white rounded-2xl shadow p-4"
       >
-        <h3 className="text-xl font-semibold mb-3">حالة الموظفين</h3>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b-2 border-gray-200">
-              <th className="text-right p-2">الاسم</th>
-              <th className="text-right p-2">الراتب الأساسي</th>
-              <th className="text-right p-2">الساعات</th>
-              <th className="text-right p-2">الخصومات</th>
-              <th className="text-right p-2">إجمالي الراتب</th>
-              <th className="text-right p-2">الحالة</th>
-            </tr>
-          </thead>
-          <tbody>
-            {currentMonthData.map((emp, idx) => (
-              <motion.tr 
-                key={emp.name}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3, delay: idx * 0.02 }}
-                className="border-b hover:bg-gray-50 cursor-pointer"
-                onClick={() => setSelectedEmployee(emp.name)}
-              >
-                <td className="p-2 font-medium">{emp.name}</td>
-                <td className="p-2">{emp.baseRate.toLocaleString()}</td>
-                <td className="p-2">{emp.hours}</td>
-                <td className="p-2 text-red-600">{emp.deductions.toLocaleString()}</td>
-                <td className="p-2 font-bold">{emp.salary.toLocaleString()}</td>
-                <td className="p-2">
-                  {emp.salary > 0 ? '✅ نشط' : '⏳ بانتظار البيانات'}
-                </td>
-              </motion.tr>
-            ))}
-          </tbody>
-        </table>
+        <h3 className="text-xl font-semibold mb-3">أعلى الرواتب</h3>
+        <div className="space-y-2">
+          {currentMonthData.slice(0, 10).map((emp, idx) => (
+            <div 
+              key={emp.name}
+              className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : `${idx + 1}`}</span>
+                <span className="font-medium">{emp.name}</span>
+              </div>
+              <span className="font-bold text-green-600">{emp.salary.toLocaleString()}</span>
+            </div>
+          ))}
+        </div>
       </motion.div>
+
+      {/* Employee Dropdown */}
+      <div className="bg-white p-4 rounded-xl shadow">
+        <label className="block text-sm font-medium mb-2">اختر موظف:</label>
+        <select
+          value={selectedEmployee}
+          onChange={(e) => setSelectedEmployee(e.target.value)}
+          className="w-full md:w-64 p-2 border rounded-lg"
+        >
+          {employeeStats.map(emp => (
+            <option key={emp.name} value={emp.name}>{emp.name}</option>
+          ))}
+        </select>
+      </div>
 
       {/* Selected Employee Charts */}
       <AnimatePresence>
-        {selectedEmployee && (
+        {selectedEmployeeData && (
           <motion.div 
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
@@ -271,100 +293,63 @@ export default function EmployeeAnalytics({ csvUrl }) {
             transition={{ duration: 0.3 }}
             className="bg-white rounded-2xl shadow p-4"
           >
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold">
-                {selectedEmployee} - السجل
-              </h3>
-              <button 
-                onClick={() => setSelectedEmployee(null)}
-                className="px-3 py-1 bg-gray-200 rounded-lg hover:bg-gray-300"
-              >
-                إغلاق
-              </button>
-            </div>
+            <h3 className="text-xl font-semibold mb-4">
+              {selectedEmployee} - السجل
+            </h3>
             
-            {(() => {
-              const emp = employeeStats.find(e => e.name === selectedEmployee);
-              if (!emp) return null;
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-gray-50 rounded-xl p-4">
+                <h4 className="font-semibold mb-2">الساعة الشهرية</h4>
+                <ResponsiveContainer width="100%" height={300}>
+                  <AreaChart data={selectedEmployeeData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Area type="monotone" dataKey="baseRate" stroke="#10B981" fill="#10B981" fillOpacity={0.3} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
               
-              const chartData = emp.history.map(h => ({
-                month: h.month,
-                baseRate: h.baseRate,
-                hours: h.hours,
-                salary: h.salary,
-                deductions: h.deductions,
-              }));
+              <div className="bg-gray-50 rounded-xl p-4">
+                <h4 className="font-semibold mb-2">إجمالي الراتب</h4>
+                <ResponsiveContainer width="100%" height={300}>
+                  <AreaChart data={selectedEmployeeData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Area type="monotone" dataKey="salary" stroke="#3B82F6" fill="#3B82F6" fillOpacity={0.3} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
               
-              return (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <h4 className="font-semibold mb-2">الراتب الأساسي</h4>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <AreaChart data={chartData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="month" />
-                        <YAxis />
-                        <Tooltip />
-                        <Area 
-                          type="monotone" 
-                          dataKey="baseRate" 
-                          stroke="#10B981" 
-                          fill="#10B981" 
-                          fillOpacity={0.3}
-                          name="الراتب الأساسي"
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                  
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <h4 className="font-semibold mb-2">إجمالي الراتب</h4>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <AreaChart data={chartData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="month" />
-                        <YAxis />
-                        <Tooltip />
-                        <Area 
-                          type="monotone" 
-                          dataKey="salary" 
-                          stroke="#3B82F6" 
-                          fill="#3B82F6" 
-                          fillOpacity={0.3}
-                          name="إجمالي الراتب"
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                  
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <h4 className="font-semibold mb-2">الساعات</h4>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={chartData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="month" />
-                        <YAxis />
-                        <Tooltip />
-                        <Bar dataKey="hours" fill="#F59E0B" name="الساعات" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                  
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <h4 className="font-semibold mb-2">الخصومات</h4>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={chartData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="month" />
-                        <YAxis />
-                        <Tooltip />
-                        <Bar dataKey="deductions" fill="#EF4444" name="الخصومات" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              );
-            })()}
+              <div className="bg-gray-50 rounded-xl p-4">
+                <h4 className="font-semibold mb-2">الساعات</h4>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={selectedEmployeeData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="hours" fill="#F59E0B" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              
+              <div className="bg-gray-50 rounded-xl p-4">
+                <h4 className="font-semibold mb-2">الخصومات</h4>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={selectedEmployeeData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="deductions" fill="#EF4444" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
